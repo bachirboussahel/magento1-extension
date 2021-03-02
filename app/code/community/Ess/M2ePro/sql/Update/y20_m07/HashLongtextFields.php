@@ -79,6 +79,7 @@ SQL
             ->select()
             ->from($this->_installer->getFullTableName($tableName), $column)
             ->where("`{$column}` IS NOT NULL")
+            ->limit(1)
             ->query()
             ->fetchColumn();
 
