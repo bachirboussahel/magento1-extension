@@ -288,12 +288,28 @@ class Ess_M2ePro_Model_Cron_Task_Ebay_Template_RemoveUnused extends Ess_M2ePro_M
                 $listingProduct
             )
         );
+        
+        /* Getting intermediary results to simplify the Query*/
+        $stmt = $connRead->query($unionSelect);
+        $result = $stmt->fetchAll();
+
+        $list = array();
+        foreach($result as $row) 
+	        $list[] = $row['result_field'];
+        
+        if (count($list)==0) $list[] = 0;
+        
+        $list_str = implode(',', $list);
 
         $minCreateDate = Mage::helper('M2ePro')->getCurrentGmtDate(true) - self::SAFE_CREATE_DATE_INTERVAL;
         $minCreateDate = Mage::helper('M2ePro')->getDate($minCreateDate);
-
         $collection = Mage::getModel('M2ePro/Ebay_Template_StoreCategory')->getCollection();
-        $collection->getSelect()->where('id NOT IN ('.$unionSelect->__toString().')');
+        
+        # This line created a very slow and big complex query and cron always go in timeout
+        # The solution is to get the result from the union of queries and pass it to the main query
+        # $collection->getSelect()->where('id NOT IN ('.$unionSelect->__toString().')');
+        
+        $collection->getSelect()->where('id NOT IN ('.$list_str.')');
         $collection->getSelect()->where('create_date < ?', $minCreateDate);
 
         $rememberTemplateIds = array();
